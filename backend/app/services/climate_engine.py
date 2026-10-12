@@ -229,6 +229,13 @@ def analyze_climate_hazard(
             data_quality=data_quality
         ))
 
+    # Compute 5-year centered rolling average of heatwave events
+    if yearly_metrics:
+        event_counts = [m.heatwave_events for m in yearly_metrics]
+        rolling_series = pd.Series(event_counts).rolling(window=5, min_periods=1, center=True).mean()
+        for idx, m in enumerate(yearly_metrics):
+            m.rolling_avg_5yr = round(float(rolling_series.iloc[idx]), 2)
+
     # Sample DOY thresholds (e.g. every 15 days) for visual threshold representation
     sample_doy: List[dict] = []
     month_names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]

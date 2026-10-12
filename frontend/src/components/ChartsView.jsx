@@ -12,7 +12,7 @@ import {
   Filler,
 } from 'chart.js';
 import { Bar, Line } from 'react-chartjs-2';
-import { BarChart3, TrendingUp, Calendar, Activity } from 'lucide-react';
+import { BarChart3, TrendingUp, Calendar, Activity, CheckSquare, Square } from 'lucide-react';
 
 ChartJS.register(
   CategoryScale,
@@ -28,6 +28,8 @@ ChartJS.register(
 
 export default function ChartsView({ data }) {
   const [activeTab, setActiveTab] = useState('frequency');
+  const [showRegression, setShowRegression] = useState(true);
+  const [showRollingAvg, setShowRollingAvg] = useState(true);
 
   if (!data || !data.yearly_metrics) return null;
 
@@ -36,13 +38,11 @@ export default function ChartsView({ data }) {
   const events = yearly_metrics.map(m => m.heatwave_events);
   const heatwaveDays = yearly_metrics.map(m => m.total_heatwave_days);
   const severity = yearly_metrics.map(m => m.cumulative_severity);
+  const rollingAverages = yearly_metrics.map(m => m.rolling_avg_5yr ?? null);
 
   // Compute linear regression points for trend line overlay
   const n = years.length;
-  const x0 = years[0];
-  const meanY = trend_statistics.baseline_decade_mean;
   const slopePerYear = trend_statistics.slope_events_per_decade / 10.0;
-  // Trend line points: y = a + b * (year - year_0)
   const avgYear = (years[0] + years[n - 1]) / 2.0;
   const avgEvents = events.reduce((a, b) => a + b, 0) / n;
   const trendLineValues = years.map(yr => {
@@ -50,30 +50,53 @@ export default function ChartsView({ data }) {
     return Math.max(0, parseFloat(val.toFixed(2)));
   });
 
-  // Chart 1: Frequency & Trend Line
+  // Chart 1 Datasets: Frequency, Regression Trend, and 5-Year Rolling Average
+  const frequencyDatasets = [];
+
+  if (showRegression) {
+    frequencyDatasets.push({
+      type: 'line',
+      label: `Linear Regression Trend (${trend_statistics.slope_events_per_decade > 0 ? '+' : ''}${trend_statistics.slope_events_per_decade} ev/decade)`,
+      data: trendLineValues,
+      borderColor: '#f59e0b',
+      borderWidth: 2.5,
+      borderDash: [5, 5],
+      pointRadius: 0,
+      fill: false,
+      tension: 0.1,
+      order: 1,
+    });
+  }
+
+  if (showRollingAvg) {
+    frequencyDatasets.push({
+      type: 'line',
+      label: '5-Year Rolling Average',
+      data: rollingAverages,
+      borderColor: '#06b6d4',
+      backgroundColor: 'rgba(6, 182, 212, 0.1)',
+      borderWidth: 2.5,
+      pointRadius: 2,
+      pointHoverRadius: 5,
+      fill: false,
+      tension: 0.35,
+      order: 2,
+    });
+  }
+
+  frequencyDatasets.push({
+    type: 'bar',
+    label: 'Heatwave Events',
+    data: events,
+    backgroundColor: 'rgba(255, 87, 34, 0.75)',
+    hoverBackgroundColor: '#ff5722',
+    borderRadius: 4,
+    order: 3,
+  });
+
   const frequencyChartData = {
     labels: years,
-    datasets: [
-      {
-        type: 'line',
-        label: `Linear Trend (${trend_statistics.slope_events_per_decade > 0 ? '+' : ''}${trend_statistics.slope_events_per_decade} ev/decade)`,
-        data: trendLineValues,
-        borderColor: '#f59e0b',
-        borderWidth: 2.5,
-        borderDash: [5, 5],
-        pointRadius: 0,
-        fill: false,
-        tension: 0.1,
-      },
-      {
-        type: 'bar',
-        label: 'Heatwave Events',
-        data: events,
-        backgroundColor: 'rgba(255, 87, 34, 0.75)',
-        hoverBackgroundColor: '#ff5722',
-        borderRadius: 4,
-      },
-    ],
+    datasets: frequencyDatasets,
   };
 
   // Chart 2: Duration & Cumulative Severity
@@ -110,7 +133,7 @@ export default function ChartsView({ data }) {
     labels: doyLabels,
     datasets: [
       {
-        label: '95th Percentile Threshold (°C) across Year',
+        label: '95th Percentile Threshold (°C) across Year (DOY ±7-day window)',
         data: doyThresholds,
         borderColor: '#ff5722',
         backgroundColor: 'rgba(255, 87, 34, 0.12)',
@@ -180,7 +203,7 @@ export default function ChartsView({ data }) {
 
   return (
     <div className="glass-panel chart-card" style={{ gridColumn: '1 / -1' }}>
-      <div className="chart-header">
+      <div className="chart-header" style={{ flexWrap: 'wrap', gap: '0.75rem' }}>
         <div>
           <h2 className="chart-title">Interactive Time-Series Visualizations</h2>
           <p className="chart-subtitle">
@@ -197,7 +220,7 @@ export default function ChartsView({ data }) {
             style={{ padding: '0.35rem 0.75rem', fontSize: '0.78rem' }}
           >
             <BarChart3 size={13} />
-            <span>Hazard Frequency & Trend</span>
+            <span>Hazard Frequency & Trends</span>
           </button>
           <button
             type="button"
@@ -219,6 +242,33 @@ export default function ChartsView({ data }) {
           </button>
         </div>
       </div>
+
+      {/* Trend Technique Toggles (Gap C Implementation: Rolling Average vs Linear Regression) */}
+      {activeTab === 'frequency' && (
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '0.4rem 0.85rem', borderRadius: '6px', fontSize: '0.76rem' }}>
+          <span style={{ color: 'var(--text-muted)', fontWeight: 600 }}>Trend Detection Methods:</span>
+          
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', cursor: 'pointer', color: showRegression ? '#f59e0b' : 'var(--text-muted)' }}>
+            <input
+              type="checkbox"
+              checked={showRegression}
+              onChange={(e) => setShowRegression(e.target.checked)}
+              style={{ accentColor: '#f59e0b' }}
+            />
+            <span>Linear Regression Trend</span>
+          </label>
+
+          <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', cursor: 'pointer', color: showRollingAvg ? '#06b6d4' : 'var(--text-muted)' }}>
+            <input
+              type="checkbox"
+              checked={showRollingAvg}
+              onChange={(e) => setShowRollingAvg(e.target.checked)}
+              style={{ accentColor: '#06b6d4' }}
+            />
+            <span>5-Year Rolling Average</span>
+          </label>
+        </div>
+      )}
 
       <div className="chart-canvas-box" style={{ height: 380 }}>
         {activeTab === 'frequency' && (

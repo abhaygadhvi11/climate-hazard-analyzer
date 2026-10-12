@@ -1,9 +1,17 @@
 from typing import List, Optional, Literal
 from pydantic import BaseModel, Field, field_validator
 
+class BoundingBox(BaseModel):
+    min_latitude: float = Field(..., ge=-90.0, le=90.0)
+    max_latitude: float = Field(..., ge=-90.0, le=90.0)
+    min_longitude: float = Field(..., ge=-180.0, le=180.0)
+    max_longitude: float = Field(..., ge=-180.0, le=180.0)
+
 class AnalyzeRequest(BaseModel):
     latitude: float = Field(..., ge=-90.0, le=90.0, description="Latitude between -90 and 90")
     longitude: float = Field(..., ge=-180.0, le=180.0, description="Longitude between -180 and 180")
+    bounding_box: Optional[BoundingBox] = Field(None, description="Optional custom lat-lon bounding box")
+    selection_type: Literal["point", "bounding_box"] = Field("point", description="Region selection mode")
     start_year: int = Field(1990, ge=1950, le=2024, description="Start year of analysis")
     end_year: int = Field(2023, ge=1950, le=2024, description="End year of analysis")
     hazard_type: Literal["heatwave"] = Field("heatwave", description="Hazard type (default: heatwave)")
@@ -22,6 +30,7 @@ class AnalyzeRequest(BaseModel):
 class YearlyHazardMetric(BaseModel):
     year: int
     heatwave_events: int
+    rolling_avg_5yr: Optional[float] = None  # 5-year rolling average of heatwave events
     total_heatwave_days: int
     avg_duration_days: float
     max_temperature: Optional[float]

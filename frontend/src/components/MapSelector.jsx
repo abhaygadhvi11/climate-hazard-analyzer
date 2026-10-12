@@ -1,7 +1,8 @@
-import React, { useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
+import React, { useEffect, useState } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, Rectangle, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
-import { Compass, Crosshair } from 'lucide-react';
+import { Compass, Crosshair, Box } from 'lucide-react';
+import LocationSearch from './LocationSearch';
 
 // Fix Leaflet's default marker icon path issue in Vite
 delete L.Icon.Default.prototype._getIconUrl;
@@ -50,43 +51,70 @@ function MapClickHandler({ onLocationSelect }) {
   return null;
 }
 
-export default function MapSelector({ latitude, longitude, onLocationChange }) {
-  const [tileMode, setTileMode] = React.useState('dark'); // 'dark' (Esri) or 'osm' (OpenStreetMap)
+export default function MapSelector({
+  latitude,
+  longitude,
+  onLocationChange,
+  selectionMode = 'point',
+  boundingBox = null,
+  onSearchSelect
+}) {
+  const [tileMode, setTileMode] = useState('dark'); // 'dark' (Esri) or 'osm' (OpenStreetMap)
   const snappedLat = Math.round(latitude / 0.25) * 0.25;
   const snappedLon = Math.round(longitude / 0.25) * 0.25;
 
+  const isBBox = selectionMode === 'bounding_box' && boundingBox;
+  const bboxBounds = isBBox
+    ? [
+        [boundingBox.minLat, boundingBox.minLon],
+        [boundingBox.maxLat, boundingBox.maxLon],
+      ]
+    : null;
+
   return (
     <div className="glass-panel map-panel">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-        <div className="section-label">
-          <Compass size={14} style={{ color: 'var(--accent-cyan)' }} />
-          <span>Interactive Region Selector (Leaflet)</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          {/* Tile Layer Switcher */}
-          <div style={{ display: 'flex', gap: '0.25rem', background: 'rgba(0,0,0,0.3)', padding: '2px', borderRadius: '4px' }}>
-            <button
-              type="button"
-              onClick={() => setTileMode('dark')}
-              className={`preset-chip ${tileMode === 'dark' ? 'active' : ''}`}
-              style={{ padding: '0.2rem 0.5rem', fontSize: '0.7rem' }}
-            >
-              Dark Canvas
-            </button>
-            <button
-              type="button"
-              onClick={() => setTileMode('osm')}
-              className={`preset-chip ${tileMode === 'osm' ? 'active' : ''}`}
-              style={{ padding: '0.2rem 0.5rem', fontSize: '0.7rem' }}
-            >
-              Street Map
-            </button>
+      {/* Header with Search and Map Controls */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <div className="section-label">
+            <Compass size={14} style={{ color: 'var(--accent-cyan)' }} />
+            <span>Interactive Region Selector (Leaflet)</span>
           </div>
-          <div className="grid-snap-hint">
-            <Crosshair size={12} />
-            <span>Grid: {snappedLat.toFixed(2)}°, {snappedLon.toFixed(2)}°</span>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            {/* Tile Layer Switcher */}
+            <div style={{ display: 'flex', gap: '0.25rem', background: 'rgba(0,0,0,0.3)', padding: '2px', borderRadius: '4px' }}>
+              <button
+                type="button"
+                onClick={() => setTileMode('dark')}
+                className={`preset-chip ${tileMode === 'dark' ? 'active' : ''}`}
+                style={{ padding: '0.2rem 0.5rem', fontSize: '0.7rem' }}
+              >
+                Dark Canvas
+              </button>
+              <button
+                type="button"
+                onClick={() => setTileMode('osm')}
+                className={`preset-chip ${tileMode === 'osm' ? 'active' : ''}`}
+                style={{ padding: '0.2rem 0.5rem', fontSize: '0.7rem' }}
+              >
+                Street Map
+              </button>
+            </div>
+            
+            <div className="grid-snap-hint">
+              {isBBox ? <Box size={12} /> : <Crosshair size={12} />}
+              <span>
+                {isBBox
+                  ? `Box: [${boundingBox.minLat}°–${boundingBox.maxLat}°N, ${boundingBox.minLon}°–${boundingBox.maxLon}°E]`
+                  : `ERA5 Grid Node: ${snappedLat.toFixed(2)}°, ${snappedLon.toFixed(2)}°`}
+              </span>
+            </div>
           </div>
         </div>
+
+        {/* City/State Search Bar (Gap A Implementation) */}
+        <LocationSearch onLocationSelect={onSearchSelect} />
       </div>
 
       <div className="map-wrapper">
@@ -107,10 +135,12 @@ export default function MapSelector({ latitude, longitude, onLocationChange }) {
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
           )}
+
+          {/* Marker pin */}
           <Marker position={[latitude, longitude]} icon={fireIcon}>
             <Popup>
               <div style={{ color: '#090d16', padding: '2px' }}>
-                <strong>Selected Location</strong>
+                <strong>{isBBox ? 'Box Center Point' : 'Selected Region'}</strong>
                 <br />
                 Lat: {latitude.toFixed(2)}&deg;
                 <br />
@@ -122,12 +152,30 @@ export default function MapSelector({ latitude, longitude, onLocationChange }) {
               </div>
             </Popup>
           </Marker>
+
+          {/* Custom Lat-Lon Bounding Box Visualization (Gap B Implementation) */}
+          {isBBox && bboxBounds && (
+            <Rectangle
+              bounds={bboxBounds}
+              pathOptions={{
+                color: '#ff5722',
+                weight: 2,
+                fillColor: '#ff5722',
+                fillOpacity: 0.15,
+                dashArray: '4, 4',
+              }}
+            />
+          )}
+
           <RecenterMap lat={latitude} lon={longitude} />
           <MapClickHandler onLocationSelect={onLocationChange} />
         </MapContainer>
       </div>
+
       <p style={{ fontSize: '0.73rem', color: 'var(--text-muted)' }}>
-        Click anywhere on the globe to select a region. Coordinates snap automatically to the nearest 0.25&deg; (~25 km) grid cell.
+        {isBBox
+          ? 'Custom lat-lon box active. The dashed boundary outlines your specified geographic window.'
+          : 'Search any city/state above or click anywhere to select. Coordinates snap automatically to the nearest 0.25° grid node.'}
       </p>
     </div>
   );

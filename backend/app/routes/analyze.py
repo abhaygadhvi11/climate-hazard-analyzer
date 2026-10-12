@@ -23,11 +23,20 @@ async def analyze_hazard(request: AnalyzeRequest):
     3. Fetches from NoSQL cache or retrieves missing years from Open-Meteo.
     4. Computes Day-Of-Year 95th percentile baseline (±7-day window).
     5. Detects 3+ consecutive day heatwaves with strict gap protection.
-    6. Calculates OLS regression and Mann-Kendall trend metrics.
     """
     try:
+        target_lat = request.latitude
+        target_lon = request.longitude
+        loc_name = None
+
+        if request.selection_type == "bounding_box" and request.bounding_box:
+            bbox = request.bounding_box
+            target_lat = (bbox.min_latitude + bbox.max_latitude) / 2.0
+            target_lon = (bbox.min_longitude + bbox.max_longitude) / 2.0
+            loc_name = f"Custom Box [{bbox.min_latitude:.2f}°-{bbox.max_latitude:.2f}°N, {bbox.min_longitude:.2f}°-{bbox.max_longitude:.2f}°E]"
+
         snapped_lat, snapped_lon, grid_id = snap_to_grid(
-            request.latitude, request.longitude, settings.GRID_STEP
+            target_lat, target_lon, settings.GRID_STEP
         )
 
         # Baseline years (1991-2020) + User-requested analysis years
@@ -73,6 +82,7 @@ async def analyze_hazard(request: AnalyzeRequest):
 
         return AnalyzeResponse(
             grid_id=grid_id,
+            location_name=loc_name,
             cache_hit_years=cache_hits,
             api_fetched_years=api_fetches,
             storage_mode=db_manager.mode,

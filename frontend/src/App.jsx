@@ -8,7 +8,7 @@ import InsightBanner from './components/InsightBanner';
 import ChartsView from './components/ChartsView';
 import EventsTable from './components/EventsTable';
 import { fetchHealth, fetchPresets, analyzeHazard, downloadCSV } from './api';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 
 export default function App() {
   const [healthData, setHealthData] = useState(null);
@@ -16,8 +16,16 @@ export default function App() {
   const [activePresetId, setActivePresetId] = useState('delhi');
 
   // Input states
+  const [selectionMode, setSelectionMode] = useState('point'); // 'point' or 'bounding_box'
   const [latitude, setLatitude] = useState(28.61);
   const [longitude, setLongitude] = useState(77.23);
+  const [boundingBox, setBoundingBox] = useState({
+    minLat: 27.6,
+    maxLat: 29.6,
+    minLon: 76.2,
+    maxLon: 78.2,
+  });
+
   const [startYear, setStartYear] = useState(1990);
   const [endYear, setEndYear] = useState(2023);
   const [consecutiveDays, setConsecutiveDays] = useState(3);
@@ -42,30 +50,51 @@ export default function App() {
           setActivePresetId(first.id);
           setLatitude(first.latitude);
           setLongitude(first.longitude);
-          runAnalysis(first.latitude, first.longitude, 1990, 2023, 3, 95.0);
+          runAnalysis(
+            first.latitude,
+            first.longitude,
+            'point',
+            null,
+            1990,
+            2023,
+            3,
+            95.0
+          );
         }
       } catch (err) {
         console.warn('Failed to load presets from backend:', err);
         // Fallback preset
-        runAnalysis(28.61, 77.23, 1990, 2023, 3, 95.0);
+        runAnalysis(28.61, 77.23, 'point', null, 1990, 2023, 3, 95.0);
       }
     }
     init();
   }, []);
 
-  async function runAnalysis(lat, lon, sYear, eYear, cDays, pct) {
+  async function runAnalysis(lat, lon, mode, bbox, sYear, eYear, cDays, pct) {
     setLoading(true);
     setError(null);
     try {
-      const res = await analyzeHazard({
+      const payload = {
         latitude: lat,
         longitude: lon,
+        selection_type: mode,
+        bounding_box:
+          mode === 'bounding_box' && bbox
+            ? {
+                min_latitude: bbox.minLat,
+                max_latitude: bbox.maxLat,
+                min_longitude: bbox.minLon,
+                max_longitude: bbox.maxLon,
+              }
+            : null,
         start_year: sYear,
         end_year: eYear,
         hazard_type: 'heatwave',
         consecutive_days: cDays,
         percentile: pct,
-      });
+      };
+
+      const res = await analyzeHazard(payload);
       setAnalysisData(res);
       // Refresh health to update cached records count
       const health = await fetchHealth();
@@ -81,9 +110,19 @@ export default function App() {
 
   const handleSelectPreset = (city) => {
     setActivePresetId(city.id);
+    setSelectionMode('point');
     setLatitude(city.latitude);
     setLongitude(city.longitude);
-    runAnalysis(city.latitude, city.longitude, startYear, endYear, consecutiveDays, percentile);
+    runAnalysis(
+      city.latitude,
+      city.longitude,
+      'point',
+      null,
+      startYear,
+      endYear,
+      consecutiveDays,
+      percentile
+    );
   };
 
   const handleMapLocationChange = (lat, lon) => {
@@ -92,10 +131,78 @@ export default function App() {
     const roundLon = Math.round(lon * 100) / 100;
     setLatitude(roundLat);
     setLongitude(roundLon);
+
+    if (selectionMode === 'bounding_box') {
+      // Center bounding box around clicked coordinate
+      const updatedBox = {
+        minLat: Math.round((roundLat - 1.0) * 10) / 10,
+        maxLat: Math.round((roundLat + 1.0) * 10) / 10,
+        minLon: Math.round((roundLon - 1.0) * 10) / 10,
+        maxLon: Math.round((roundLon + 1.0) * 10) / 10,
+      };
+      setBoundingBox(updatedBox);
+      runAnalysis(
+        roundLat,
+        roundLon,
+        'bounding_box',
+        updatedBox,
+        startYear,
+        endYear,
+        consecutiveDays,
+        percentile
+      );
+    } else {
+      runAnalysis(
+        roundLat,
+        roundLon,
+        'point',
+        null,
+        startYear,
+        endYear,
+        consecutiveDays,
+        percentile
+      );
+    }
+  };
+
+  const handleSearchSelect = (lat, lon, displayName) => {
+    setActivePresetId(null);
+    const roundLat = Math.round(lat * 100) / 100;
+    const roundLon = Math.round(lon * 100) / 100;
+    setLatitude(roundLat);
+    setLongitude(roundLon);
+
+    const updatedBox = {
+      minLat: Math.round((roundLat - 1.0) * 10) / 10,
+      maxLat: Math.round((roundLat + 1.0) * 10) / 10,
+      minLon: Math.round((roundLon - 1.0) * 10) / 10,
+      maxLon: Math.round((roundLon + 1.0) * 10) / 10,
+    };
+    setBoundingBox(updatedBox);
+
+    runAnalysis(
+      roundLat,
+      roundLon,
+      selectionMode,
+      updatedBox,
+      startYear,
+      endYear,
+      consecutiveDays,
+      percentile
+    );
   };
 
   const handleSubmit = () => {
-    runAnalysis(latitude, longitude, startYear, endYear, consecutiveDays, percentile);
+    runAnalysis(
+      latitude,
+      longitude,
+      selectionMode,
+      boundingBox,
+      startYear,
+      endYear,
+      consecutiveDays,
+      percentile
+    );
   };
 
   const handleDownloadCSV = async () => {
@@ -135,6 +242,8 @@ export default function App() {
           <ControlPanel
             latitude={latitude}
             longitude={longitude}
+            selectionMode={selectionMode}
+            boundingBox={boundingBox}
             startYear={startYear}
             endYear={endYear}
             consecutiveDays={consecutiveDays}
@@ -142,6 +251,8 @@ export default function App() {
             loading={loading}
             onLatitudeChange={setLatitude}
             onLongitudeChange={setLongitude}
+            onSelectionModeChange={setSelectionMode}
+            onBoundingBoxChange={setBoundingBox}
             onStartYearChange={setStartYear}
             onEndYearChange={setEndYear}
             onConsecutiveDaysChange={setConsecutiveDays}
@@ -152,7 +263,10 @@ export default function App() {
           <MapSelector
             latitude={latitude}
             longitude={longitude}
+            selectionMode={selectionMode}
+            boundingBox={boundingBox}
             onLocationChange={handleMapLocationChange}
+            onSearchSelect={handleSearchSelect}
           />
         </section>
 

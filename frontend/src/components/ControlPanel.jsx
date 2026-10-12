@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { Sliders, Play, Settings2, Calendar, Flame, AlertCircle } from 'lucide-react';
+import { Sliders, Play, Settings2, Calendar, Flame, MapPin, Box } from 'lucide-react';
 
 export default function ControlPanel({
   latitude,
   longitude,
+  selectionMode = 'point',
+  boundingBox = { minLat: 27.5, maxLat: 29.5, minLon: 76.5, maxLon: 78.5 },
   startYear,
   endYear,
   consecutiveDays,
@@ -11,6 +13,8 @@ export default function ControlPanel({
   loading,
   onLatitudeChange,
   onLongitudeChange,
+  onSelectionModeChange,
+  onBoundingBoxChange,
   onStartYearChange,
   onEndYearChange,
   onConsecutiveDaysChange,
@@ -21,6 +25,13 @@ export default function ControlPanel({
 
   const snappedLat = Math.round(latitude / 0.25) * 0.25;
   const snappedLon = Math.round(longitude / 0.25) * 0.25;
+
+  const handleBboxFieldChange = (field, val) => {
+    onBoundingBoxChange({
+      ...boundingBox,
+      [field]: parseFloat(val) || 0,
+    });
+  };
 
   return (
     <div className="glass-panel control-panel">
@@ -52,33 +63,111 @@ export default function ControlPanel({
         </div>
       </div>
 
-      {/* Coordinates */}
-      <div className="input-row">
-        <div className="form-group">
-          <label className="form-label">Latitude (-90 to 90)</label>
-          <input
-            type="number"
-            step="0.01"
-            className="custom-input"
-            value={latitude}
-            onChange={(e) => onLatitudeChange(parseFloat(e.target.value) || 0)}
-          />
-        </div>
-        <div className="form-group">
-          <label className="form-label">Longitude (-180 to 180)</label>
-          <input
-            type="number"
-            step="0.01"
-            className="custom-input"
-            value={longitude}
-            onChange={(e) => onLongitudeChange(parseFloat(e.target.value) || 0)}
-          />
+      {/* Region Mode Toggle: Point vs Custom Lat-Lon Box (Gap B Implementation) */}
+      <div className="form-group">
+        <label className="form-label">Geographic Selection Mode</label>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <button
+            type="button"
+            className={`preset-chip ${selectionMode === 'point' ? 'active' : ''}`}
+            onClick={() => onSelectionModeChange('point')}
+            style={{ flex: 1, justifyContent: 'center', padding: '0.45rem' }}
+          >
+            <MapPin size={13} />
+            <span>Point Coordinate</span>
+          </button>
+          <button
+            type="button"
+            className={`preset-chip ${selectionMode === 'bounding_box' ? 'active' : ''}`}
+            onClick={() => onSelectionModeChange('bounding_box')}
+            style={{ flex: 1, justifyContent: 'center', padding: '0.45rem' }}
+          >
+            <Box size={13} />
+            <span>Custom Lat-Lon Box</span>
+          </button>
         </div>
       </div>
 
-      <div className="grid-snap-hint">
-        <span>Target Grid Node: {snappedLat.toFixed(2)}&deg;N, {snappedLon.toFixed(2)}&deg;E</span>
-      </div>
+      {/* Coordinate Inputs based on mode */}
+      {selectionMode === 'point' ? (
+        <>
+          <div className="input-row">
+            <div className="form-group">
+              <label className="form-label">Latitude (-90 to 90)</label>
+              <input
+                type="number"
+                step="0.01"
+                className="custom-input"
+                value={latitude}
+                onChange={(e) => onLatitudeChange(parseFloat(e.target.value) || 0)}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Longitude (-180 to 180)</label>
+              <input
+                type="number"
+                step="0.01"
+                className="custom-input"
+                value={longitude}
+                onChange={(e) => onLongitudeChange(parseFloat(e.target.value) || 0)}
+              />
+            </div>
+          </div>
+          <div className="grid-snap-hint">
+            <span>Target ERA5 Grid Node: {snappedLat.toFixed(2)}&deg;N, {snappedLon.toFixed(2)}&deg;E</span>
+          </div>
+        </>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', background: 'rgba(0,0,0,0.2)', padding: '0.75rem', borderRadius: '6px' }}>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+            Define custom bounding box coordinates (min &ndash; max boundaries):
+          </span>
+          <div className="input-row">
+            <div className="form-group">
+              <label className="form-label" style={{ fontSize: '0.75rem' }}>Min Latitude</label>
+              <input
+                type="number"
+                step="0.1"
+                className="custom-input"
+                value={boundingBox.minLat}
+                onChange={(e) => handleBboxFieldChange('minLat', e.target.value)}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label" style={{ fontSize: '0.75rem' }}>Max Latitude</label>
+              <input
+                type="number"
+                step="0.1"
+                className="custom-input"
+                value={boundingBox.maxLat}
+                onChange={(e) => handleBboxFieldChange('maxLat', e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="input-row">
+            <div className="form-group">
+              <label className="form-label" style={{ fontSize: '0.75rem' }}>Min Longitude</label>
+              <input
+                type="number"
+                step="0.1"
+                className="custom-input"
+                value={boundingBox.minLon}
+                onChange={(e) => handleBboxFieldChange('minLon', e.target.value)}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label" style={{ fontSize: '0.75rem' }}>Max Longitude</label>
+              <input
+                type="number"
+                step="0.1"
+                className="custom-input"
+                value={boundingBox.maxLon}
+                onChange={(e) => handleBboxFieldChange('maxLon', e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Time Range */}
       <div className="slider-container">
@@ -131,7 +220,7 @@ export default function ControlPanel({
           }}
         >
           <Settings2 size={13} />
-          <span>{showAdvanced ? 'Hide Advanced Climate Logic' : 'Adjust Advanced Climate Logic (Percentile & Duration)'}</span>
+          <span>{showAdvanced ? 'Hide Advanced Parameters' : 'Adjust Advanced Parameters (Percentile & Duration)'}</span>
         </button>
 
         {showAdvanced && (
