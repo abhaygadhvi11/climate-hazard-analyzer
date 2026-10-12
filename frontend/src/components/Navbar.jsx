@@ -27,11 +27,24 @@ export default function Navbar({ healthData }) {
         </div>
 
         <a
-          href="https://archive-api.open-meteo.com"
+          href="http://localhost:8000/docs"
           target="_blank"
           rel="noopener noreferrer"
           className="btn-secondary"
           style={{ padding: '0.4rem 0.75rem', fontSize: '0.75rem' }}
+          title="Interactive FastAPI Swagger API documentation"
+        >
+          <span>API Docs</span>
+          <ExternalLink size={12} />
+        </a>
+
+        <a
+          href="https://open-meteo.com/en/docs/historical-weather-api"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn-secondary"
+          style={{ padding: '0.4rem 0.75rem', fontSize: '0.75rem' }}
+          title="Open-Meteo ERA5 Historical Weather Documentation"
         >
           <span>Open-Meteo ERA5</span>
           <ExternalLink size={12} />
