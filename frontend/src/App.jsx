@@ -10,9 +10,18 @@ import EventsTable from './components/EventsTable';
 import { fetchHealth, fetchPresets, analyzeHazard, downloadCSV } from './api';
 import { AlertCircle } from 'lucide-react';
 
+const INITIAL_PRESETS = [
+  { id: 'delhi', name: 'New Delhi', country: 'India', latitude: 28.61, longitude: 77.23, description: 'Subtropical megacity experiencing intense heatwaves.' },
+  { id: 'phoenix', name: 'Phoenix, Arizona', country: 'United States', latitude: 33.45, longitude: -112.07, description: 'Sonoran desert urban heat island.' },
+  { id: 'seville', name: 'Seville', country: 'Spain', latitude: 37.38, longitude: -5.98, description: 'One of Europe hottest urban centers.' },
+  { id: 'paris', name: 'Paris', country: 'France', latitude: 48.85, longitude: 2.35, description: 'Western European capital.' },
+  { id: 'sydney', name: 'Sydney', country: 'Australia', latitude: -33.87, longitude: 151.21, description: 'Southern hemisphere coastal region.' },
+  { id: 'tokyo', name: 'Tokyo', country: 'Japan', latitude: 35.68, longitude: 139.69, description: 'Temperate urban heat island.' },
+];
+
 export default function App() {
   const [healthData, setHealthData] = useState(null);
-  const [presets, setPresets] = useState([]);
+  const [presets, setPresets] = useState(INITIAL_PRESETS);
   const [activePresetId, setActivePresetId] = useState('delhi');
 
   // Input states
