@@ -51,19 +51,41 @@ function MapClickHandler({ onLocationSelect }) {
 }
 
 export default function MapSelector({ latitude, longitude, onLocationChange }) {
+  const [tileMode, setTileMode] = React.useState('dark'); // 'dark' (Esri) or 'osm' (OpenStreetMap)
   const snappedLat = Math.round(latitude / 0.25) * 0.25;
   const snappedLon = Math.round(longitude / 0.25) * 0.25;
 
   return (
     <div className="glass-panel map-panel">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
         <div className="section-label">
           <Compass size={14} style={{ color: 'var(--accent-cyan)' }} />
           <span>Interactive Region Selector (Leaflet)</span>
         </div>
-        <div className="grid-snap-hint">
-          <Crosshair size={12} />
-          <span>Snapped ERA5 Grid: {snappedLat.toFixed(2)}°, {snappedLon.toFixed(2)}°</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          {/* Tile Layer Switcher */}
+          <div style={{ display: 'flex', gap: '0.25rem', background: 'rgba(0,0,0,0.3)', padding: '2px', borderRadius: '4px' }}>
+            <button
+              type="button"
+              onClick={() => setTileMode('dark')}
+              className={`preset-chip ${tileMode === 'dark' ? 'active' : ''}`}
+              style={{ padding: '0.2rem 0.5rem', fontSize: '0.7rem' }}
+            >
+              Dark Canvas
+            </button>
+            <button
+              type="button"
+              onClick={() => setTileMode('osm')}
+              className={`preset-chip ${tileMode === 'osm' ? 'active' : ''}`}
+              style={{ padding: '0.2rem 0.5rem', fontSize: '0.7rem' }}
+            >
+              Street Map
+            </button>
+          </div>
+          <div className="grid-snap-hint">
+            <Crosshair size={12} />
+            <span>Grid: {snappedLat.toFixed(2)}°, {snappedLon.toFixed(2)}°</span>
+          </div>
         </div>
       </div>
 
@@ -74,11 +96,17 @@ export default function MapSelector({ latitude, longitude, onLocationChange }) {
           scrollWheelZoom={true}
           style={{ height: '100%', width: '100%' }}
         >
-          {/* CartoDB Dark Matter tiles */}
-          <TileLayer
-            attribution='&copy; <a href="https://carto.com/">CARTO</a> &copy; OpenStreetMap'
-            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-          />
+          {tileMode === 'dark' ? (
+            <TileLayer
+              attribution='Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ'
+              url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
+            />
+          ) : (
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+          )}
           <Marker position={[latitude, longitude]} icon={fireIcon}>
             <Popup>
               <div style={{ color: '#090d16', padding: '2px' }}>
