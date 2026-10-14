@@ -4,7 +4,7 @@ const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
   (typeof window !== 'undefined' && window.location.port === '5173'
     ? 'http://localhost:8000/api'
-    : '/api');
+    : 'https://climate-hazard-backend-d71p.onrender.com/api');
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,

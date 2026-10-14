@@ -9,7 +9,7 @@ export default function Navbar({ healthData }) {
     ? import.meta.env.VITE_API_BASE_URL.replace(/\/api\/?$/, '') + '/docs'
     : (typeof window !== 'undefined' && window.location.port === '5173'
         ? 'http://localhost:8000/docs'
-        : '/docs');
+        : 'https://climate-hazard-backend-d71p.onrender.com/docs');
 
   return (
     <header className="app-header">
