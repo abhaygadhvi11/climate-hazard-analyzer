@@ -5,6 +5,10 @@ export default function Navbar({ healthData }) {
   const isConnected = !!healthData;
   const storageName = healthData?.database?.backend_storage || 'Connecting...';
 
+  const apiDocsUrl = (import.meta.env.VITE_API_BASE_URL
+    ? import.meta.env.VITE_API_BASE_URL.replace(/\/api\/?$/, '')
+    : 'http://localhost:8000') + '/docs';
+
   return (
     <header className="app-header">
       <div className="brand-section">
@@ -27,7 +31,7 @@ export default function Navbar({ healthData }) {
         </div>
 
         <a
-          href="http://localhost:8000/docs"
+          href={apiDocsUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="btn-secondary"
