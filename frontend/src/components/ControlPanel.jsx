@@ -40,26 +40,15 @@ export default function ControlPanel({
         <span>Hazard Parameters & Analysis Range</span>
       </div>
 
-      {/* Hazard Type Selection */}
+      {/* Active Hazard Module */}
       <div className="form-group">
-        <label className="form-label">Hazard Type</label>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button
-            type="button"
-            className="preset-chip active"
-            style={{ flex: 1, justifyContent: 'center' }}
-          >
-            <Flame size={14} style={{ color: 'var(--accent-fire)' }} />
-            <span>Heatwave (Default)</span>
-          </button>
-          <button
-            type="button"
-            className="preset-chip"
-            style={{ opacity: 0.4, cursor: 'not-allowed', flex: 1, justifyContent: 'center' }}
-            title="Dygnify brief: Scope over polish — A working, well-reasoned heatwave analysis beats a half-finished multi-hazard app"
-          >
-            <span>Drought</span>
-          </button>
+        <label className="form-label">Active Hazard Module</label>
+        <div
+          className="preset-chip active"
+          style={{ width: '100%', justifyContent: 'center', cursor: 'default' }}
+        >
+          <Flame size={14} style={{ color: 'var(--accent-fire)' }} />
+          <span>Heatwave Analysis (WMO 1991–2020 Baseline)</span>
         </div>
       </div>
 
