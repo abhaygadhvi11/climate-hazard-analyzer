@@ -3,10 +3,24 @@
 > **Full-Stack Developer Case Study Submission** for **Dygnify Ventures Pvt Ltd**  
 > An end-to-end web application that ingests long-term historical weather reanalysis records and visualizes climate hazard trends (specifically heatwaves), built strictly on domain-standard climatological definitions.
 
-![Tech Stack](https://img.shields.io/badge/Stack-FastAPI%20%7C%20React%20%7C%20MongoDB%20%7C%20Chart.js%20%7C%20Leaflet-blue?style=for-the-badge)
-![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black)
-![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Vercel-black?style=for-the-badge&logo=vercel)](https://climate-hazard-analyzer-app2.vercel.app/)
+[![Backend API](https://img.shields.io/badge/API_Server-Render-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://climate-hazard-backend-d71p.onrender.com)
+[![Swagger Docs](https://img.shields.io/badge/API_Docs-Swagger-85EA2D?style=for-the-badge&logo=swagger&logoColor=black)](https://climate-hazard-backend-d71p.onrender.com/docs)
+[![Database](https://img.shields.io/badge/Database-MongoDB_Atlas-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://climate-hazard-backend-d71p.onrender.com/api/health)
+[![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
+
+---
+
+## 🌐 Live Production Deployments
+
+| Component | Provider | Live URL | Status |
+| :--- | :--- | :--- | :---: |
+| **Frontend Dashboard** | **Vercel** | [https://climate-hazard-analyzer-app2.vercel.app/](https://climate-hazard-analyzer-app2.vercel.app/) | ![Operational](https://img.shields.io/badge/Active-10b981?style=flat-square) |
+| **FastAPI Backend API** | **Render** | [https://climate-hazard-backend-d71p.onrender.com](https://climate-hazard-backend-d71p.onrender.com) | ![Operational](https://img.shields.io/badge/Active-10b981?style=flat-square) |
+| **Interactive API Docs** | **Swagger UI** | [https://climate-hazard-backend-d71p.onrender.com/docs](https://climate-hazard-backend-d71p.onrender.com/docs) | ![Operational](https://img.shields.io/badge/Active-10b981?style=flat-square) |
+| **NoSQL Database** | **MongoDB Atlas** | `climate-cluster` (Cloud M0 Cluster) | ![Operational](https://img.shields.io/badge/Connected-10b981?style=flat-square) |
+| **Source Code** | **GitHub** | [https://github.com/abhaygadhvi11/climate-hazard-analyzer](https://github.com/abhaygadhvi11/climate-hazard-analyzer) | ![Open Source](https://img.shields.io/badge/Public-blue?style=flat-square) |
 
 ---
 
@@ -114,37 +128,39 @@ A single static threshold (e.g., 95th percentile across all 365 calendar days) o
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
-│                        REACT 18 DASHBOARD (Vite)                       │
+│                        VERCEL EDGE NETWORK                             │
+│                     (React 18 Dashboard - Vite)                        │
 │  [Nominatim Search]  [Leaflet Map / Bounding Box]  [Hotspot Presets]   │
 │  [KPI Metric Cards]  [Chart.js Frequency & Trends] [Events Table / CSV]│
 └────────────────────────────────────────────────────────────────────────┘
                                     │
-                                    │ HTTP / JSON
+                                    │ HTTPS (Encrypted API Calls)
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
-│                        FASTAPI BACKEND SERVICE                         │
+│                        RENDER CLOUD WEB SERVICE                        │
+│                        (FastAPI Python 3.12 Engine)                    │
 │  • SlowAPI Rate Limiting (60 req/min)                                  │
 │  • Pydantic Input Validation & Sanitization                            │
 │  • Coordinate Snapping to 0.25° ERA5 Grid                              │
 └────────────────────────────────────────────────────────────────────────┘
                     │                                │
-          Cache Miss│                      Cache Hit │ (Sub-500ms)
+          Cache Miss│                      Cache Hit │ (Sub-50ms)
                     ▼                                ▼
 ┌──────────────────────────────────────┐  ┌──────────────────────────────┐
-│        OPEN-METEO ARCHIVE API        │  │        NoSQL DATABASE        │
-│  • Global ERA5 Reanalysis            │  │  • MongoDB Atlas (Cloud)     │
-│  • Batched multi-year chunks         │  │  • TinyDB (Local Fallback)   │
+│        OPEN-METEO ARCHIVE API        │  │      MONGODB ATLAS CLOUD     │
+│  • Global ERA5 Reanalysis            │  │  • Cloud M0 NoSQL Cluster    │
+│  • Batched multi-year chunks         │  │  • Persistent cache          │
 │  • Zero API key friction             │  │  • Keyed by (grid_id, year)  │
 └──────────────────────────────────────┘  └──────────────────────────────┘
-                    │
-                    └────────► Stores cleaned daily data ─────►┘
+                    │                                ▲
+                    └────────► Stores cleaned data ──┘
 ```
 
 ---
 
 ## 📡 API Reference
 
-Interactive Swagger documentation is available at **`http://localhost:8000/docs`**.
+Interactive Swagger documentation is available live at **[https://climate-hazard-backend-d71p.onrender.com/docs](https://climate-hazard-backend-d71p.onrender.com/docs)**.
 
 ### 1. `POST /api/analyze`
 Core hazard analysis endpoint.
@@ -171,7 +187,7 @@ Core hazard analysis endpoint.
 ```json
 {
   "grid_id": "28.50_77.25",
-  "storage_mode": "tinydb",
+  "storage_mode": "mongodb",
   "cache_hit_years": 34,
   "api_fetched_years": 0,
   "baseline_info": {
@@ -202,7 +218,7 @@ Returns curated climate hotspots with country flags, climate zones, and coordina
 Accepts `AnalyzeResponse` and streams a formatted CSV with climatological metadata headers.
 
 ### 4. `GET /api/health`
-Health check endpoint reporting server status, storage driver in use, and WMO baseline configuration.
+Health check endpoint reporting server status, storage driver in use (`MongoDB Atlas`), and WMO baseline configuration.
 
 ---
 
@@ -227,11 +243,6 @@ source venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
-
-# (Optional) Set up MongoDB Atlas connection string:
-# Create a .env file:
-# MONGODB_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/?retryWrites=true&w=majority
-# If omitted, TinyDB automatically initializes in backend/data/cache_store.json
 
 # Start FastAPI server
 python run.py
