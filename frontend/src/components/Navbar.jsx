@@ -5,9 +5,11 @@ export default function Navbar({ healthData }) {
   const isConnected = !!healthData;
   const storageName = healthData?.database?.backend_storage || 'Connecting...';
 
-  const apiDocsUrl = (import.meta.env.VITE_API_BASE_URL
-    ? import.meta.env.VITE_API_BASE_URL.replace(/\/api\/?$/, '')
-    : 'http://localhost:8000') + '/docs';
+  const apiDocsUrl = import.meta.env.VITE_API_BASE_URL
+    ? import.meta.env.VITE_API_BASE_URL.replace(/\/api\/?$/, '') + '/docs'
+    : (typeof window !== 'undefined' && window.location.port === '5173'
+        ? 'http://localhost:8000/docs'
+        : '/docs');
 
   return (
     <header className="app-header">
